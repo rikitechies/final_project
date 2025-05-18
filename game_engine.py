@@ -43,3 +43,37 @@ class Board:
 
     def all_ships_sunk(self):
         return all(ship.is_sunk() for ship in self.ships)
+
+class Player:
+    def __init__(self, name: str):
+        self.name = name
+        self.board = Board()
+
+class AI(Player):
+    def __init__(self):
+        super().__init__("Комп'ютер")
+        self.place_ships_randomly()
+
+    def place_ships_randomly(self):
+        ship_sizes = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1]
+        for size in ship_sizes:
+            placed = False
+            while not placed:
+                orientation = random.choice(["horizontal", "vertical"])
+                if orientation == "horizontal":
+                    row = random.randint(0, self.board.size - 1)
+                    col = random.randint(0, self.board.size - size)
+                    positions = [(row, col + i) for i in range(size)]
+                else:
+                    row = random.randint(0, self.board.size - size)
+                    col = random.randint(0, self.board.size - 1)
+                    positions = [(row + i, col) for i in range(size)]
+                ship = Ship(size, positions)
+                placed = self.board.place_ship(ship)
+
+    def make_move(self, opponent_board: Board):
+        while True:
+            row = random.randint(0, self.board.size - 1)
+            col = random.randint(0, self.board.size - 1)
+            if (row, col) not in opponent_board.shots:
+                return row, col
