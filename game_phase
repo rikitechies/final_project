@@ -12,8 +12,7 @@ class GamePhase:
 
         self.create_widgets()
 
-    def create_widgets(self):
-        """Створення ігрових полів гравця та AI"""
+    def create_widgets(self): #створення полів гри
         self.game_frame = tk.Frame(self.master)
         self.game_frame.pack()
 
@@ -36,8 +35,7 @@ class GamePhase:
         # Обробка кліків
         self.ai_canvas.bind("<Button-1>", self.handle_player_shot)
 
-    def draw_board(self, canvas: tk.Canvas, board: Board, hide_ships: bool = False):
-        """Малює поле з кораблями та пострілами"""
+    def draw_board(self, canvas: tk.Canvas, board: Board, hide_ships: bool = False): #візуалізація поля гри
         canvas.delete("all")
         size = board.size
         cs = self.cell_size
@@ -72,3 +70,47 @@ class GamePhase:
                     else:
                         canvas.create_line(x1 + 5, y1 + 5, x2 - 5, y2 - 5, fill="white")
                         canvas.create_line(x1 + 5, y2 - 5, x2 - 5, y1 + 5, fill="white")
+    def handle_player_shot(self, event):
+        #хід гравця
+        if self.current_player != "player":
+            return
+
+        col = (event.x - 20) // self.cell_size
+        row = (event.y - 20) // self.cell_size
+
+        if not (0 <= row < 10 and 0 <= col < 10):
+            return
+
+        if (row, col) in self.ai.board.shots:
+            messagebox.showwarning("Увага", "Ви вже стріляли в цю клітинку!")
+            return
+
+        hit, ship = self.ai.board.receive_shot(row, col)
+        self.draw_board(self.ai_canvas, self.ai.board, hide_ships=True)
+
+        if hit:
+            if ship.is_sunk():
+                messagebox.showinfo("Інформація", f"Корабель ({ship.size}) потоплено!")
+            if self.ai.board.all_ships_sunk():
+                messagebox.showinfo("Перемога!", "Ви виграли!")
+                self.master.quit()
+        else:
+            self.current_player = "ai"
+            self.master.after(1000, self.ai_turn)
+
+    def ai_turn(self):
+        #хід пк
+        row, col = self.ai.make_move(self.player.board)
+        hit, ship = self.player.board.receive_shot(row, col)
+        self.draw_board(self.player_canvas, self.player.board)
+
+        if hit:
+            if ship.is_sunk():
+                messagebox.showinfo("Інформація", f"Ваш корабель ({ship.size}) потоплено!")
+            if self.player.board.all_ships_sunk():
+                messagebox.showinfo("Поразка!", "Комп'ютер виграв!")
+                self.master.quit()
+            else:
+                self.master.after(1000, self.ai_turn)
+        else:
+            self.current_player = "player"
